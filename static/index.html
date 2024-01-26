@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset='utf-8'>
+    <title>Pong</title>
+    <link rel='stylesheet' type='text/css' media='screen' href='css/main.css'>
+    <script src='js/main.js'></script>
+</head>
+
+<body>
+    <div id="register">
+        <label for="name">Enter your name: </label>
+        <input type="text" name="name" id="name" required />
+        <button onclick="register()">Register</button>
+    </div>
+
+    <div id="login" hidden>
+        <p id="login-name"></p>
+        <button onclick="login()">Login</button>
+    </div>
+
+    <div id="game" hidden>
+        <div class="game-bar">
+            <p id="left-name"></p>
+            <p id="left-score"></p>
+            <p id="right-score"></p>
+            <p id="right-name"></p>
+        </div>
+        <div class="game-border">
+            <div id="left-paddle" class="paddle"></div>
+            <!-- <div class="split-line"></div> -->
+            <div id="right-paddle" class="paddle"></div>
+            <div id="ball"></div>
+        </div>
+    </div>
+</body>
+
+</html>

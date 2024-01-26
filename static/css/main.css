@@ -1,0 +1,25 @@
+.game-border {
+    border: solid;
+    width: 600px;
+    height: 400px;
+}
+
+.split-line {
+    border: solid;
+    height: 100%;
+    width: 0px;
+}
+
+.paddle {
+    border: solid;
+    width: 10px;
+    height: 75px;
+    position: absolute;
+}
+
+#ball{
+    border: solid;
+    width: 10px;
+    height: 10px;
+    position: absolute;
+}
