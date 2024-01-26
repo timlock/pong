@@ -8,15 +8,34 @@ type Vector struct {
 	X int
 	Y int
 }
-func (v Vector) Add(other Vector) Vector{
+
+func (v Vector) Add(other Vector) Vector {
 	v.X += other.X
 	v.Y += other.Y
 	return v
 }
+func (v Vector) Dot(other Vector) int {
+	return v.X*other.X + v.Y*other.Y
+}
+
 type Rectangle struct {
 	Pos    Vector
 	Width  int
 	Height int
+}
+
+func (r Rectangle) TopLeft() Vector {
+	y := r.Pos.Y - r.Height
+	return Vector{X: r.Pos.X, Y: y}
+}
+func (r Rectangle) TopRight() Vector {
+	y := r.Pos.Y - r.Height
+	x := r.Pos.X + r.Width
+	return Vector{X: x, Y: y}
+}
+func (r Rectangle) BottomRight() Vector {
+	x := r.Pos.X + r.Width
+	return Vector{X: x, Y: r.Pos.Y}
 }
 
 func newBall(x int, y int) Rectangle {
@@ -27,10 +46,10 @@ func newPaddle(x int, y int) Rectangle {
 }
 
 func (r Rectangle) Overlaps(other Rectangle) bool {
-	if r.Pos.Y+r.Height < other.Pos.Y || r.Pos.Y > other.Pos.Y+other.Height {
+	if r.TopRight().Y < other.Pos.Y || r.Pos.Y > other.TopRight().Y {
 		return false
 	}
-	if r.Pos.X+r.Width < other.Pos.X || r.Pos.X > other.Pos.X+other.Width {
+	if r.TopRight().X < other.Pos.X || r.Pos.X > other.TopRight().X {
 		return false
 	}
 	return true
@@ -86,26 +105,27 @@ func (s *Simulation) Compute(dTime int) Game {
 	s.game.Time += dTime
 	newDir := Vector{X: s.game.BallDir.X * dTime, Y: s.game.BallDir.Y * dTime}
 	newBall := newBall(s.game.Ball.Pos.X+newDir.X, s.game.Ball.Pos.Y+newDir.Y)
-	for {
-		if newBall.Pos.Y >= 0 && newBall.Pos.Y < 100 {
-			if newBall.Pos.X <= 0 {
-				s.game.RightScore += 1
-				s.reset()
-				return s.game
-			}
-			if newBall.Pos.X >= 100 {
-				s.game.LeftScore += 1
-				s.reset()
-				return s.game
-			}
-			if (s.game.LeftPaddle.Pos.Y + s.game.LeftPaddle.Height) - 	
-			s.game.Ball = newBall
-			s.game.BallDir = newDir
+	if newBall.Pos.Y >= 0 && newBall.Pos.Y < 100 {
+		if newBall.Pos.X <= 0 {
+			s.game.RightScore += 1
+			s.reset()
 			return s.game
-		} else {
-			newDir.Y *= -1
-
 		}
+		if newBall.Pos.X >= 100 {
+			s.game.LeftScore += 1
+			s.reset()
+			return s.game
+		}
+		if s.game.LeftPaddle.Overlaps(newBall) || s.game.RightPaddle.Overlaps(newBall) {
+			s.game.BallDir.X *= -1
+			return s.game
+		}
+		s.game.Ball = newBall
+		s.game.BallDir = newDir
+		return s.game
+	} else {
+		s.game.BallDir.Y *= -1
+		return s.game
 	}
 
 }

@@ -50,28 +50,20 @@ func startGame(left Observer, right Observer, ticks int) {
 	log.Println("Start match of left: ", *left.Player, " right: ", *right.Player)
 	go func() {
 		ticker := time.NewTicker(time.Duration(ticks) * time.Millisecond)
-		ball := entity.Vector{X: 0, Y: 0}
-		ballDir := entity.Vector{X: 50, Y: 1}
-		leftPos := entity.Vector{X: 5, Y: 0}
-		rightPos := entity.Vector{X: 95, Y: 0}
+		lastTick := time.Now()
 		leftInput := 0
 		rightInput := 0
-		lastTick := time.Now()
+		simulation := entity.NewSimulation()
 	EndGame:
 		for {
 			select {
 			case t := <-ticker.C:
 				dTime := t.Sub(lastTick)
 				lastTick = t
-				leftPos.Y += leftInput * int(dTime)
-				rightPos.Y += rightInput * int(dTime)
-				ball.X += ballDir.X * int(dTime)
-				ball.Y += ballDir.Y * int(dTime)
-				leftInput = 0
-				rightInput = 0
-
-				game := entity.Game{LeftPaddle: leftPos, RightPaddle: rightPos, Ball: ball}
-				update := ServerMessage{Game: game}
+				simulation.UpdateLeft(leftInput)
+				simulation.UpdateRight(rightInput)
+				state := simulation.Compute(int(dTime))
+				update := ServerMessage{Game: state}
 				left.Client <- update
 				right.Client <- update
 			case input, more := <-left.Server:
