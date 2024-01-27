@@ -17,9 +17,14 @@
     position: absolute;
 }
 
-#ball{
+#ball {
     border: solid;
     width: 10px;
     height: 10px;
     position: absolute;
+}
+
+#game-field {
+    border: solid;
+    color: black;
 }
