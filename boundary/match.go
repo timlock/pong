@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"pong/controller"
+	"pong/entity"
 	"pong/repository"
 
 	"github.com/google/uuid"
@@ -47,12 +48,13 @@ func (m MatchHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	server := make(chan controller.ClientMessage)
 	client := make(chan controller.ServerMessage)
+	go read(conn, server, *player)
+	go write(conn, client, *player)
 	observer := controller.Observer{Player: player, Server: server, Client: client}
 	m.simulator.Add(observer)
-	go read(conn, server)
-	go write(conn, client)
 }
-func read(conn *websocket.Conn, server chan<- controller.ClientMessage) {
+func read(conn *websocket.Conn, server chan<- controller.ClientMessage, player entity.Player) {
+	log.Println(player, " WS read goroutine opened")
 	for {
 		_, message, err := conn.ReadMessage()
 		if err != nil {
@@ -65,12 +67,14 @@ func read(conn *websocket.Conn, server chan<- controller.ClientMessage) {
 			log.Println("Player submited invalid input: ", message, " err: ", err)
 			continue
 		}
-		log.Println(clientMessage)
+		// log.Println(clientMessage)
 		server <- clientMessage
 	}
+	log.Println(player, " WS read goroutine closed")
 	conn.Close()
 }
-func write(conn *websocket.Conn, client <-chan controller.ServerMessage) {
+func write(conn *websocket.Conn, client <-chan controller.ServerMessage, player entity.Player) {
+	log.Println(player, " WS write goroutine opened")
 	for message := range client {
 		json, err := json.Marshal(message.Game)
 		if err != nil {
@@ -78,6 +82,8 @@ func write(conn *websocket.Conn, client <-chan controller.ServerMessage) {
 			continue
 		}
 		conn.WriteJSON(json)
+		// log.Println("Message sent to ", player)
 	}
+	log.Println(player, " WS write goroutine closed")
 	conn.Close()
 }

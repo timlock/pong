@@ -7,7 +7,7 @@ import (
 )
 
 type ServerMessage struct {
-	Game entity.Game
+	Game entity.GameState
 }
 
 type ClientMessage struct {
@@ -32,15 +32,16 @@ func (s Lobby) Add(observer Observer) {
 }
 func (s Lobby) Run() {
 	go func() {
-		var waiting *Observer = nil
+		var waiting Observer 
+		isWaiting := false
 		for player := range s.register {
-			if waiting == nil {
-				waiting = &player
+			if !isWaiting {
+				waiting = player
+				isWaiting = true
 				log.Println(waiting.Player.Id, " waits for a match")
 			} else {
-				startGame(*waiting, player, s.ticks)
-				waiting = nil
-
+				startGame(waiting, player, s.ticks)
+				isWaiting = false
 			}
 		}
 	}()
@@ -65,6 +66,10 @@ func startGame(left Observer, right Observer, ticks int) {
 				state := simulation.Compute(int(dTime))
 				update := ServerMessage{Game: state}
 				left.Client <- update
+				tmp := state.LeftPaddle
+				state.LeftPaddle = state.RightPaddle
+				state.RightPaddle = tmp
+				update = ServerMessage{Game: state}
 				right.Client <- update
 			case input, more := <-left.Server:
 				if !more {

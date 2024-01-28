@@ -24,18 +24,15 @@ type Rectangle struct {
 	Height int
 }
 
-func (r Rectangle) TopLeft() Vector {
-	y := r.Pos.Y - r.Height
-	return Vector{X: r.Pos.X, Y: y}
-}
 func (r Rectangle) TopRight() Vector {
-	y := r.Pos.Y - r.Height
+	y := r.Pos.Y 
 	x := r.Pos.X + r.Width
 	return Vector{X: x, Y: y}
 }
-func (r Rectangle) BottomRight() Vector {
-	x := r.Pos.X + r.Width
-	return Vector{X: x, Y: r.Pos.Y}
+func (r Rectangle) BottomLeft() Vector{
+	y := r.Pos.Y + r.Height
+	x := r.Pos.X
+	return Vector{X: x, Y: y}
 }
 
 func newBall(x int, y int) Rectangle {
@@ -46,10 +43,10 @@ func newPaddle(x int, y int) Rectangle {
 }
 
 func (r Rectangle) Overlaps(other Rectangle) bool {
-	if r.TopRight().Y < other.Pos.Y || r.Pos.Y > other.TopRight().Y {
+	if r.TopRight().Y < other.BottomLeft().Y || r.BottomLeft().Y > other.TopRight().Y {
 		return false
 	}
-	if r.TopRight().X < other.Pos.X || r.Pos.X > other.TopRight().X {
+	if r.TopRight().X < other.BottomLeft().X || r.BottomLeft().X > other.TopRight().X {
 		return false
 	}
 	return true
@@ -59,7 +56,7 @@ type Player struct {
 	Id   uuid.UUID
 	Name string
 }
-type Game struct {
+type GameState struct {
 	LeftPaddle  Rectangle
 	LeftScore   int
 	RightPaddle Rectangle
@@ -69,29 +66,36 @@ type Game struct {
 	Time        int
 }
 
-const GameWitdh = 100
+const GameWitdh = 200
 const GameHeight = 100
-const PlayerWidth = 2
-const PlayerHeight = 5
+const PlayerWidth = 4
+const PlayerHeight = 14
 
 type Simulation struct {
-	game Game
+	game GameState
 }
 
 func NewSimulation() Simulation {
 	ball := newBall(0, 0)
 	ballDir := Vector{X: 1, Y: 1}
-	left := newPaddle(5, 0)
-	right := newPaddle(95, 0)
-	game := Game{Ball: ball, LeftPaddle: left, RightPaddle: right, BallDir: ballDir}
-	return Simulation{game: game}
+	left := newPaddle(0, 0)
+	right := newPaddle(0, 0)
+	game := GameState{Ball: ball, LeftPaddle: left, RightPaddle: right, BallDir: ballDir}
+	simulation := Simulation{game: game}
+	simulation.reset()
+	return simulation
 }
 
 func (s *Simulation) reset() {
-	s.game.Ball.Pos = Vector{X: 0, Y: 0}
+	x := GameWitdh/2 - PlayerWidth/2
+	y := GameHeight/2 - PlayerWidth/2
+	s.game.Ball.Pos = Vector{X: x, Y: y}
 	s.game.BallDir = Vector{X: 1, Y: 1}
-	s.game.LeftPaddle.Pos = Vector{X: 5, Y: 0}
-	s.game.RightPaddle.Pos = Vector{X: 95, Y: 0}
+	x = PlayerWidth * 2
+	y = GameHeight/2 - PlayerHeight/2
+	s.game.LeftPaddle.Pos = Vector{X: x, Y: y}
+	x = GameWitdh - PlayerWidth*2
+	s.game.RightPaddle.Pos = Vector{X: x, Y: y}
 }
 
 func (s *Simulation) UpdateLeft(y int) {
@@ -101,7 +105,7 @@ func (s *Simulation) UpdateRight(y int) {
 	s.game.RightPaddle.Pos.Y = y
 }
 
-func (s *Simulation) Compute(dTime int) Game {
+func (s *Simulation) Compute(dTime int) GameState {
 	s.game.Time += dTime
 	newDir := Vector{X: s.game.BallDir.X * dTime, Y: s.game.BallDir.Y * dTime}
 	newBall := newBall(s.game.Ball.Pos.X+newDir.X, s.game.Ball.Pos.Y+newDir.Y)
