@@ -1,28 +1,56 @@
+
+
 const LOGIN_URL = '/user';
-const WS_URL = 'ws://' + document.location.host + '/match';
-let user = null;
+const WS_URL = `ws://${document.location.host}/match`;
+let user: User | undefined;
+
+export interface Position {
+    x: number;
+    y: number;
+}
+
+export interface Rectangle {
+    width: number;
+    height: number;
+    pos: Position
+}
+
+export interface State {
+    leftScore: number;
+    leftPaddle: Rectangle;
+    rightScore: number;
+    rightPaddle: Rectangle;
+    ball: Rectangle;
+}
+export interface User {
+    id: number;
+    name: string;
+}
 //TODO https://developer.mozilla.org/en-US/docs/Web/API/window/requestAnimationFrame
 window.onload = function () {
-    const user = localStorage.getItem('user');
-    if (user) {
-        document.getElementById('login-name').value = user.name;
-        document.getElementById('login').hidden = false;
+    const stored = localStorage.getItem('user')
+    if (stored) {
+        user = JSON.parse(stored);
+        const nameInput = document.getElementById('login-name') as HTMLParagraphElement;
+        nameInput.innerText = user?.name || '';
+        const loginButton = document.getElementById('login') as HTMLButtonElement;
+        loginButton.hidden = false;
     }
 }
 
-
 function register() {
-    const name = document.getElementById('name').value
+    const nameInput = document.getElementById('name') as HTMLInputElement
+    const name = nameInput.value;
     fetch(LOGIN_URL + '?name=' + name, { method: 'POST' }).then(response => {
         if (!response.ok) {
             console.log(response);
         } else {
             response.json().then((id) => {
                 console.log(id);
-                document.getElementById('register').hidden = true;
+                document.getElementById('register')!.hidden = true;
                 user = { id: id, name: name };
-                localStorage.setItem('user', user);
-                startMatch(id);
+                localStorage.setItem('user', JSON.stringify(user));
+                startMatch();
             });
         }
     }).catch(err => {
@@ -30,25 +58,26 @@ function register() {
     })
 }
 
-let lastMessage;
+let lastMessage: State | undefined;
 
 function startMatch() {
     if (!user) {
         console.error('User is null');
         return;
     }
-    const canvas = document.getElementById('game');
+    const canvas = document.getElementById('game') as HTMLCanvasElement;
     if (!canvas.getContext) {
         console.error('Canvas not supported by browser')
         return;
     }
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d')!;
     const game = new GameCanvas(canvas, ctx);
     const websocket = new WebSocket(WS_URL + '?id=' + user.id);
 
     websocket.onopen = (ev => {
         console.log(ev);
-        document.getElementById('game').hidden = false;
+        const gameCanvas = document.getElementById('game') as HTMLCanvasElement;
+        gameCanvas.hidden = false;
     }
     );
     websocket.onclose = (ev => console.log(ev))
@@ -76,9 +105,6 @@ function startMatch() {
                 break;
         }
         if (input != 0) {
-            // game.clear();
-            // game.moveLeftPaddle(input)
-            // game.draw();
             const input_message = { input: input };
             console.log(input_message);
             websocket.send(JSON.stringify(input_message));
@@ -86,21 +112,24 @@ function startMatch() {
     });
 }
 class GameCanvas {
-    state;
-    canvas;
-    ctx;
-    constructor(canvas, ctx) {
+    private state: State;
+    private canvas: HTMLCanvasElement;
+    private ctx;
+    constructor(canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D) {
+        this.state = {} as State;
         this.canvas = canvas;
         this.ctx = ctx;
     }
-    moveLeftPaddle(y) {
-        if (this.state.LeftPaddle.Pos !== undefined) {
-            this.state.LeftPaddle.Pos.Y += y;
+    moveLeftPaddle(y: any) {
+        if (this.state.leftPaddle.pos !== undefined) {
+            this.state.leftPaddle.pos.y += y;
         }
     }
-    updateState(state) {
+
+    updateState(state: State) {
         this.state = state;
     }
+
     draw() {
         const scale = this.canvas.height / 100;
         this.ctx.beginPath();
@@ -109,28 +138,28 @@ class GameCanvas {
         this.ctx.lineTo(this.canvas.width / 2, this.canvas.height);
         this.ctx.stroke();
 
-        this.drawScore(this.state.LeftScore, this.state.RightScore);
+        this.drawScore(this.state.leftScore, this.state.rightScore);
 
-        this.drawRectangle(this.state.LeftPaddle);
-        this.drawRectangle(this.state.RightPaddle);
-        this.drawRectangle(this.state.Ball);
+        this.drawRectangle(this.state.leftPaddle);
+        this.drawRectangle(this.state.rightPaddle);
+        this.drawRectangle(this.state.ball);
     }
 
     clear() {
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     }
 
-    drawRectangle(rect) {
+    drawRectangle(rect: Rectangle) {
         const scaleX = this.canvas.width / 200;
         const scaleY = this.canvas.height / 100
-        const x = rect.Pos.X * scaleX;
-        const y = rect.Pos.Y * scaleY;
-        const width = rect.Width * scaleX;
-        const height = rect.Height * scaleY;
+        const x = rect.pos.x * scaleX;
+        const y = rect.pos.y * scaleY;
+        const width = rect.width * scaleX;
+        const height = rect.height * scaleY;
         this.ctx.fillRect(x, y, width, height);
     }
 
-    drawScore(left, right) {
+    drawScore(left: any, right: any) {
         const scaleX = this.canvas.width / 200;
         const scaleY = this.canvas.height / 100
         const size = scaleY * 14;
