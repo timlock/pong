@@ -99,10 +99,10 @@ func (s *Simulation) reset() {
 }
 
 func (s *Simulation) UpdateLeft(y int) {
-	s.game.LeftPaddle.Pos.Y = y
+	s.game.LeftPaddle.Pos.Y += y
 }
 func (s *Simulation) UpdateRight(y int) {
-	s.game.RightPaddle.Pos.Y = y
+	s.game.RightPaddle.Pos.Y += y
 }
 
 func (s *Simulation) Compute(dTime int) GameState {

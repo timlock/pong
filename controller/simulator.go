@@ -71,16 +71,21 @@ func startGame(left Observer, right Observer, ticks int) {
 				state.RightPaddle = tmp
 				update = ServerMessage{Game: state}
 				right.Client <- update
+
+				leftInput = 0
+				rightInput = 0
 			case input, more := <-left.Server:
 				if !more {
 					break EndGame
 				}
 				leftInput = input.Input
+				log.Printf("Left paddle moved %v\n", input)
 			case input, more := <-right.Server:
 				if !more {
 					break EndGame
 				}
 				rightInput = input.Input
+				log.Printf("Right paddle moved %v\n", input)
 			}
 		}
 		log.Println("Game closed left: ", *left.Player, " right: ", *right.Player)

@@ -30,6 +30,8 @@ function register() {
     })
 }
 
+let lastMessage;
+
 function startMatch() {
     if (!user) {
         console.error('User is null');
@@ -52,11 +54,18 @@ function startMatch() {
     websocket.onclose = (ev => console.log(ev))
     websocket.onmessage = (ev => {
         let encodedMessage = ev.data.replaceAll('"', '').replaceAll('\n', '')
+
         const message = JSON.parse(atob(encodedMessage))
-        console.log(message);
+
+        // console.log(message);
         game.clear();
         game.updateState(message);
         game.draw();
+        message.Time = 0;
+        if (lastMessage !== message) {
+            console.log(message);
+            lastMessage = message;
+        }
     });
     document.addEventListener('keydown', (event) => {
         let input = 0;
@@ -67,10 +76,10 @@ function startMatch() {
                 break;
         }
         if (input != 0) {
-            game.clear();
-            game.moveLeftPaddle(input)
-            game.draw();
-            const input_message = { input: game.state.LeftPaddle.Pos.Y };
+            // game.clear();
+            // game.moveLeftPaddle(input)
+            // game.draw();
+            const input_message = { input: input };
             console.log(input_message);
             websocket.send(JSON.stringify(input_message));
         }
