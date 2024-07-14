@@ -3,9 +3,12 @@ package main
 import (
 	"log"
 	"net/http"
+	"pong/auth"
 	"pong/boundary"
 	"pong/controller"
 	"pong/repository"
+	"runtime/debug"
+	"time"
 
 	"github.com/gorilla/websocket"
 )
@@ -27,8 +30,33 @@ func main() {
 	userHandler := boundary.NewUserHandler(&userStore)
 	matchHandler := boundary.NewMatchHanlder(&userStore, &simulator, upgrader)
 
-	http.Handle("/", http.FileServer(http.Dir("static/")))
-	http.Handle("/user", userHandler)
-	http.Handle("/match", matchHandler)
-	log.Fatalln(http.ListenAndServe(":"+Port, nil))
+	mux := http.NewServeMux()
+
+	mux.Handle("/", http.FileServer(http.Dir("static/")))
+	mux.Handle("POST /user", userHandler)
+	mux.Handle("/match", auth.BasicAuth(matchHandler, &userStore))
+
+	handler := Logging(mux)
+	handler = PanicRecovery(handler)
+	log.Fatalln(http.ListenAndServe(":"+Port, handler))
+}
+
+func Logging(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		start := time.Now()
+		next.ServeHTTP(w, req)
+		log.Printf("%s %s %s", req.Method, req.RequestURI, time.Since(start))
+	})
+}
+
+func PanicRecovery(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		defer func() {
+			if err := recover(); err != nil {
+				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+				log.Println(string(debug.Stack()))
+			}
+		}()
+		next.ServeHTTP(w, req)
+	})
 }

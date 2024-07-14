@@ -53,6 +53,7 @@ func (m MatchHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	observer := controller.Observer{Player: player, Server: server, Client: client}
 	m.simulator.Add(observer)
 }
+
 func read(conn *websocket.Conn, server chan<- controller.ClientMessage, player entity.Player) {
 	log.Println(player, " WS read goroutine opened")
 	for {
@@ -73,6 +74,7 @@ func read(conn *websocket.Conn, server chan<- controller.ClientMessage, player e
 	log.Println(player, " WS read goroutine closed")
 	conn.Close()
 }
+
 func write(conn *websocket.Conn, client <-chan controller.ServerMessage, player entity.Player) {
 	log.Println(player, " WS write goroutine opened")
 	for message := range client {
